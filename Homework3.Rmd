@@ -1,0 +1,122 @@
+---
+title: "Homework 3"
+author: "Anish Ravindran"
+date: "2024-02-05"
+output: pdf_document
+---
+Name: Anish Ravindran   
+uteid: ar76454    
+github link: https://github.com/AnishRavi5/Homework3
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+library(tidyverse)
+library(readr)
+library(mosaic)
+```
+
+## Problem 1 ##
+### Part A ###
+```{r, echo = FALSE}
+creatinine <- read.csv("creatinine.csv")
+creat_graph <- lm(creatclear ~ age, data = creatinine)
+
+creat_55 <- data.frame(age = 55) %>%
+  predict(creat_graph, newdata = .)
+```
+For a 55 year old we should expect a creatinine clearance rate of `r creat_55`. This was determined by first using linear regression on the data and then predicting the rate for a 55 year old. The linear equation is B0 + B1 * age + E and for a 55 year old we would use the formula y = B0 + B1 * 55.
+
+### Part B ###
+```{r, echo = FALSE}
+creat_change <- coef(creat_graph)["age"]
+```
+The creatinine clearance range decreases by `r creat_change` ml/min for each year. This was found by using the coefficient function from the linear regression model that was found in the question before.
+
+### Part C ###
+```{r, echo = FALSE}
+creat40 <- data.frame(age = 40) %>%
+  predict(creat_graph, newdata = .)
+
+creat60 <- data.frame(age = 60) %>%
+  predict(creat_graph, newdata = .)
+```
+A 40 year old with a creatinine clearance rate of 135 is healthier than a 60 year old with a rate of 112. The expected rate for a 40 year old is around `r creat40` so 135 is significantly higher than the expected while the expected rate for a 60 year old is around `r creat60` and 112 is very similar. We get the expected rate for the 40 year old by using the equation y = B0 + B1 * 40 and y = B0 + B1 * 60 for a 60 year old.
+
+## Problem 2 ##
+
+In stock terms the beta is the percent change of a stock in relation of the entire market as a whole meaning that if a stock increases by 1 percent the stock would increase or decrease by the beta amount. When considering linear regression the beta is a slope or the rate of change of a stock. If the beta amount is at least 1 then the stock is considered to be volatile and if it is less than 1 the stock is considered to not be volatile and more stable. We can calculate the beta amount by dividing the rate of return on a stock by the rate of return on the entire stock market during the same time period and subtracting the residual and intercept of the stock. 
+
+```{r, echo = FALSE, message = FALSE}
+
+marketmodel = read.csv("marketmodel.csv")
+lm_AAPL <- lm(AAPL~SPY, data = marketmodel)
+lm_GOOG <- lm(GOOG~SPY, data = marketmodel)
+lm_MRK <- lm(MRK~SPY, data = marketmodel)
+lm_JNJ <- lm(JNJ~SPY, data = marketmodel)
+lm_WMT <- lm(WMT~SPY, data = marketmodel)
+lm_TGT <- lm(TGT~SPY, data = marketmodel)
+
+market_tib <- tibble("Ticker" = c("AAPL", "GOOG", "MRK", "JNJ", "WMT", "TGT"), "Intercept" = c(coef(lm_AAPL)[1],coef(lm_GOOG)[1],coef(lm_MRK)[1],coef(lm_JNJ)[1],coef(lm_WMT)[1],coef(lm_TGT)[1]), "Slope" = c(coef(lm_AAPL)[2],coef(lm_GOOG)[2],coef(lm_MRK)[2],coef(lm_JNJ)[2],coef(lm_WMT)[2],coef(lm_TGT)[2]), "R2" = c(summary(lm_AAPL)$r.squared,summary(lm_GOOG)$r.squared,summary(lm_MRK)$r.squared,summary(lm_JNJ)$r.squared,summary(lm_WMT)$r.squared,summary(lm_TGT)$r.squared))
+market_tib <- market_tib %>% mutate(across(c("Slope"), round, 2))
+market_tib <- market_tib %>% mutate(across(c("R2"), round, 3))
+
+col_names <- c("Ticker", "Intercept", "Slope", "R squared")
+kbl(market_tib, col.names = col_names)
+```
+
+The table created above shows the ticker, intercept, slope, and the r squared of the stocks. The ticker is the code used to identify the stock and the intercept shows the rate of return of the stock. The slope is the rate of change on the rate or return of the stock. Finally the r squared is the coefficient of determination whichs means the strength of the regression line.
+
+In conclusion the stock with the least amount of risk is the stock WMT, Walmart, with a beta value of .52. The stock with the highest amount of risk is AAPL, Apple, with a beta value of 1.07. We know this because the beta value of 1 or more is volatile and anything less than that is more stable.
+
+## Problem 3 ##
+### Part A ###
+```{r, echo = FALSE}
+covid <- read.csv("covid.csv")
+
+Italy_Covid <- covid %>%
+  filter(country == "Italy")
+
+Italy_Graph <- lm(log(deaths) ~ days_since_first_death, data = Italy_Covid)
+
+Italy_Growth <- exp(coef(Italy_Graph)[2]) - 1
+Italy_Double <- log(2) / coef(Italy_Graph)[2]
+```
+The estimated growth rate for covid in Italy is .2010762 and an estimated doubling time of 3.783183.
+
+### Part B ###
+```{r, echo = FALSE}
+Spain_Covid <- covid %>%
+  filter(country == "Spain")
+
+Spain_Graph <- lm(log(deaths) ~ days_since_first_death, data = Spain_Covid)
+
+Spain_Growth <- exp(coef(Spain_Graph)[2]) - 1
+Spain_Double <- log(2) / coef(Spain_Graph)[2]
+```
+The estimated growth rate for covid in Spain is `r Spain_Growth` and an estimated doubling time of `r Spain_Double`.
+
+### Part C ###
+```{r, echo = FALSE, message = FALSE}
+ggplot() +
+  geom_line(data = Italy_Covid, aes(x = days_since_first_death, y = deaths), color = "blue", linetype = "solid", size = 1) +
+  geom_line(data = Spain_Covid, aes(x = days_since_first_death, y = deaths), color = "red", linetype = "solid", size = 1) +
+  labs(title = "Reported Daily COVID-19 Deaths Over Time", x = "Days Since First Death", y = "Number of Deaths", color = "Country") + annotate("text", x = 35, y = 150, label = "Italy", color = "blue") +
+  annotate("text", x = 35, y = 100, label = "Spain", color = "red")
+```
+When comparing the Covid deaths for both countries we can see that Spain has a significantly more cases of deaths when starting off but then by around day 27 Spain's deaths aren't reported while Italy still grows.
+
+## Problem 4 ##
+```{r, echo = FALSE}
+milk <- read.csv("milk.csv")
+milk_model <- lm(log(sales) ~ log(price), data = milk)
+milk_elasticity <- coef(milk_model)[2]
+```
+
+The estimated price elasticity for the demand of milk is around -161.8%. This is calculated by using the formula Q = KP^B and we want to solve for B which is the elasticity of demand. To solve this we have to use log and subtract them for price and sales and we get `r milk_elasticity`. 
+
+
+
+
+
